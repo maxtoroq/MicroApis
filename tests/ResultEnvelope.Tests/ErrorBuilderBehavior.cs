@@ -6,7 +6,7 @@ using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ResultEnvelope.Tests {
-   
+
    [TestClass]
    public class ErrorBuilderBehavior {
 
@@ -33,7 +33,7 @@ namespace ResultEnvelope.Tests {
       }
 
       [TestMethod]
-      public void Adds_And_Formats_Message_Using_Lambda_Expression() {
+      public void Adds_And_Formats_Message_Using_Lambda_Expression_Simple() {
 
          string a = "ddf";
 
@@ -42,18 +42,51 @@ namespace ResultEnvelope.Tests {
 
          var err = errors.GetErrors();
 
-         Assert.AreEqual("Length = 3", err[0].ErrorMessage);
+         Assert.AreEqual("Length = " + a.Length.ToString(), err[0].ErrorMessage);
          Assert.AreEqual("Length", err[0].MemberNames.First());
 
          errors.Clear();
          errors.IncludeValueSelectorFirstKeySegment = true;
-         
+
          errors.Add("{1} = {0}", () => a.Length);
 
          err = errors.GetErrors();
 
-         Assert.AreEqual("Length = 3", err[0].ErrorMessage);
+         Assert.AreEqual("Length = " + a.Length.ToString(), err[0].ErrorMessage);
          Assert.AreEqual("a.Length", err[0].MemberNames.First());
+      }
+
+      [TestMethod]
+      public void Adds_And_Formats_Message_Using_Lambda_Expression_Index() {
+
+         var list = new List<int> { 1, 2, 3 };
+
+         // The for loop and i variable (instead of constant) are important
+         // because the compiler generates dependant "DisplayClass" classes,
+         // which results in an additional member-access expression in the tree,
+         // e.g. cDisplayClass31.CS$<>8__locals1.list[cDisplayClass31.i]
+         // instead of cDisplayClass31.list[cDisplayClass31.i]
+
+         for (int i = 0; i < 1; i++) {
+
+            var errors = new ErrorBuilder();
+            errors.Add("{1} = {0}", () => list[i]);
+
+            var err = errors.GetErrors();
+
+            Assert.AreEqual("[0] = " + list[i].ToString(), err[0].ErrorMessage);
+            Assert.AreEqual("[0]", err[0].MemberNames.First());
+
+            errors.Clear();
+            errors.IncludeValueSelectorFirstKeySegment = true;
+
+            errors.Add("{1} = {0}", () => list[i]);
+
+            err = errors.GetErrors();
+
+            Assert.AreEqual("list[0] = " + list[i].ToString(), err[0].ErrorMessage);
+            Assert.AreEqual("list[0]", err[0].MemberNames.First());
+         }
       }
 
       [TestMethod]
